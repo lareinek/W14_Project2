@@ -32,7 +32,7 @@ resource "aws_cloudfront_origin_access_control" "oac" {
 }
 
 
-# Upload static files automatically (Téléversement automatique de tous les fichiers du dossier local schoolstatic)
+# Téléversement automatique de tous les fichiers du dossier local schoolstatic
 resource "aws_s3_object" "static_files" {
   for_each = fileset("${path.module}/schoolstatic", "**")   # fileset (canne tous les fichiers de ton dossier) for_each (crée un objet S3 pour chaque fichier)
   bucket   = aws_s3_bucket.static_site.id
@@ -54,13 +54,13 @@ resource "aws_s3_object" "static_files" {
   )
 }
 
-# 3️⃣ ACM Certificate (must be in us-east-1 for CloudFront)
+# ACM Certificate (must be in us-east-1 for CloudFront)
 resource "aws_acm_certificate" "cert" {
   domain_name       = "${var.site_name}.${var.domain_name}" # Ex: project2.lareinek-services.site
   validation_method = "DNS"                                 #Validation DNS permet à AWS de vérifier que le domaine m’appartient.
 }
 
-# 4️⃣ DNS validation record (l’enregistrement DNS pour valider le certificat)
+# DNS validation record (l’enregistrement DNS pour valider le certificat)
 resource "aws_route53_record" "cert_validation" {
   for_each = {
     for dvo in aws_acm_certificate.cert.domain_validation_options : dvo.domain_name => {
@@ -87,7 +87,7 @@ resource "aws_acm_certificate_validation" "cert_validation_complete" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-# 5️⃣ CloudFront Distribution
+# CloudFront Distribution
 resource "aws_cloudfront_distribution" "cdn" {
   origin {
     domain_name = aws_s3_bucket.static_site.bucket_regional_domain_name
@@ -148,7 +148,7 @@ resource "aws_s3_bucket_policy" "private_policy" {
   })
 }
 
-# 6️⃣ Route 53 Alias record for CloudFront (mon domaine pointe vers CloudFront)
+# Route 53 Alias record for CloudFront (mon domaine pointe vers CloudFront)
 resource "aws_route53_record" "alias" {
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "${var.site_name}.${var.domain_name}"
